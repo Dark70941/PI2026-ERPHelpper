@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Infraestrutura como Código (IaC) - ERP Helpper Search API (Flask + ChromaDB + Docker).
+  Compatível com restrições e permissões do AWS Academy (LabInstanceProfile / LabRole).
+
+Parameters:
+  EnvironmentName:
+    Description: Nome do ambiente de implantação
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - hml
+      - prod
+
+  InstanceType:
+    Description: Tipo da instância EC2 (t2.micro ou t3.micro elegíveis para Free Tier / Academy)
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t3.small
+
+  KeyName:
+    Description: Nome do Par de Chaves (Key Pair) existente para acesso SSH
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: erp-helpper-key
+
+  LatestUbuntuAMI:
+    Description: AMI do Ubuntu Server 22.04 LTS (us-east-1)
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+
+Resources:
+  # --------------------------------------------------------------------------
+  # 1. Security Group (Firewall)
+  # --------------------------------------------------------------------------
+  ERPHelpperSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "erp-helpper-${EnvironmentName}-sg"
+      GroupDescription: "Regras de entrada e saida para a Search API do ERP Helpper"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: "Acesso administrativo via SSH"
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: "Acesso HTTP publico / Nginx"
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: "Acesso HTTPS publico / SSL"
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
+          Description: "Search API Flask (comunicacao com orquestrador n8n)"
+      Tags:
+        - Key: Name
+          Value: !Sub "erp-helpper-${EnvironmentName}-sg"
+        - Key: Project
+          Value: ERPHelpper
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # --------------------------------------------------------------------------
+  # 2. Bucket S3 para Backups e Snapshots da Base Vetorial
+  # --------------------------------------------------------------------------
+  ERPHelpperBackupBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub "erp-helpper-backups-${AWS::AccountId}-${EnvironmentName}"
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: ERPHelpper
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # --------------------------------------------------------------------------
+  # 3. Instância EC2 com Docker e Inicialização Automática (UserData)
+  # --------------------------------------------------------------------------
+  ERPHelpperInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestUbuntuAMI
+      IamInstanceProfile: "LabInstanceProfile" # Perfil pré-configurado do AWS Academy
+      SecurityGroupIds:
+        - !Ref ERPHelpperSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 15
+            VolumeType: gp3
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          echo "=== [1/5] Atualizando pacotes e configurando Swap de 2GB ==="
+          apt-get update -y
+          fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+          echo "=== [2/5] Instalando Docker e Docker Compose ==="
+          apt-get install -y ca-certificates curl gnupg git
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          chmod a+r /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+          apt-get update -y
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          systemctl enable docker
+          systemctl start docker
+          usermod -aG docker ubuntu
+
+          echo "=== [3/5] Clonando o repositório do ERP Helpper ==="
+          mkdir -p /home/ubuntu/app
+          git clone https://github.com/Dark70941/PI2026-ERPHelpper.git /home/ubuntu/app
+          chown -R ubuntu:ubuntu /home/ubuntu/app
+
+          echo "=== [4/5] Configurando ambiente ==="
+          cd /home/ubuntu/app
+          cp .env.example .env
+          sed -i 's/ENVIRONMENT=dev/ENVIRONMENT=${EnvironmentName}/g' .env
+
+          echo "=== [5/5] Subindo containers Docker ==="
+          docker compose up -d --build
+          echo "ERP Helpper inicializado com sucesso!"
+      Tags:
+        - Key: Name
+          Value: !Sub "erp-helpper-${EnvironmentName}-api"
+        - Key: Project
+          Value: ERPHelpper
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # --------------------------------------------------------------------------
+  # 4. Alarme CloudWatch para Monitoramento de CPU (Item de Maturidade AWS)
+  # --------------------------------------------------------------------------
+  ERPHelpperHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "erp-helpper-${EnvironmentName}-high-cpu-alarm"
+      AlarmDescription: "Dispara se o consumo de CPU da Search API ultrapassar 80% por 10 minutos"
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ERPHelpperInstance
+
+Outputs:
+  InstanceId:
+    Description: ID da Instância EC2 criada
+    Value: !Ref ERPHelpperInstance
+
+  PublicDNS:
+    Description: DNS Público da Instância EC2
+    Value: !GetAtt ERPHelpperInstance.PublicDnsName
+
+  PublicIP:
+    Description: Endereço IP Público da Instância EC2
+    Value: !GetAtt ERPHelpperInstance.PublicIp
+
+  HealthCheckURL:
+    Description: URL do endpoint de Health Check
+    Value: !Sub "http://${ERPHelpperInstance.PublicIp}:5000/health"
+
+  SearchAPIURL:
+    Description: URL do endpoint de busca para n8n
+    Value: !Sub "http://${ERPHelpperInstance.PublicIp}:5000/search"
+
+  BackupS3Bucket:
+    Description: Nome do Bucket S3 de Backups
+    Value: !Ref ERPHelpperBackupBucket

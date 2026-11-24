@@ -1,0 +1,58 @@
+name: CD - Deploy Continuo na AWS
+
+on:
+  push:
+    branches: [ "main" ]
+
+# ==============================================================================
+# NOTA SOBRE AWS ACADEMY VS PRODUÇÃO REAL:
+# ==============================================================================
+# No AWS Academy:
+# 1. As credenciais de sessão (AWS_SESSION_TOKEN) expiram a cada 4 horas.
+# 2. Não é permitido criar credenciais IAM fixas ou OIDC Role direto no Academy.
+# 3. Portanto, o deploy contínuo em laboratório é realizado via SSH direto na EC2
+#    usando Secrets do GitHub (EC2_HOST, EC2_USER, EC2_SSH_KEY), ou acionado manualmente.
+#
+# Em Produção Real:
+# 1. Utiliza-se GitHub OIDC (aws-actions/configure-aws-credentials) com uma Role IAM
+#    dedicada (Least Privilege), dispensando qualquer chave estática no GitHub.
+# 2. O deploy pode atualizar uma stack CloudFormation, ECS Task Definition ou EC2 via SSM.
+# ==============================================================================
+
+jobs:
+  deploy-to-aws:
+    name: Deploy na AWS EC2 (Docker)
+    runs-on: ubuntu-latest
+    if: github.repository == 'Dark70941/PI2026-ERPHelpper'
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Executar Deploy Remoto via SSH na EC2
+        uses: appleboy/ssh-action@v1.0.3
+        if: env.EC2_HOST != ''
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            echo "🚀 Iniciando Deploy Contínuo no Servidor AWS EC2..."
+            cd /home/ubuntu/chatBotAWS1 || cd /home/ubuntu/app
+            
+            echo "📥 Atualizando código com Git Pull..."
+            git pull origin main
+            
+            echo "🐳 Reconstruindo containers com Docker Compose..."
+            docker compose down
+            docker compose up -d --build
+            
+            echo "⏳ Aguardando aquecimento do container (10s)..."
+            sleep 10
+            
+            echo "❤️ Validando integridade via Health Check..."
+            curl -f http://localhost:5000/health || exit 1
+            echo "✅ Deploy concluído com sucesso e Health Check validado (Status: UP)!"

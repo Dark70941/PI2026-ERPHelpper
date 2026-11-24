@@ -1,0 +1,37 @@
+[
+  {
+    "Categoria": "Faturamento e NFe",
+    "Titulo": "Como tratar a rejeição 201 (Duplicidade de NF-e)?",
+    "Conteudo": "A Rejeição 201 ocorre quando uma Nota Fiscal Eletrônica com o mesmo número, série e modelo já foi autorizada pela SEFAZ anteriormente.\n\nPara solucionar:\n1. Acesse o módulo de Faturamento > Manutenção de Notas Fiscais.\n2. Localize a nota fiscal rejeitada e verifique a numeração.\n3. Altere o número da nota para o próximo da sequência autorizada ou consulte a nota existente no portal da SEFAZ para confirmar se o lote já havia sido aprovado.\n4. Realize a retransmissão da nota fiscal eletrônica.",
+    "Palavras Chave": "rejeição 201, erro 201, duplicidade nfe, faturamento, sefaz, emitir nota",
+    "URL": "https://wiki.erp-exemplo.com.br/artigos/rejeicao-201-duplicidade-nfe"
+  },
+  {
+    "Categoria": "Acesso e Segurança",
+    "Titulo": "Como redefinir a senha de usuário no ERP?",
+    "Conteudo": "Para redefinir a senha de um usuário no sistema ERP:\n1. Acesse o menu Configurações > Usuários e Permissões.\n2. Selecione o usuário desejado na lista.\n3. Clique no botão 'Redefinir Senha'.\n4. Defina uma nova senha temporária ou selecione 'Enviar link de redefinição por e-mail'.\n5. Solicite ao colaborador que acesse o sistema e cadastre uma nova senha pessoal que cumpra as políticas de segurança.",
+    "Palavras Chave": "senha, redefinir senha, login, esqueci a senha, acesso, usuarios",
+    "URL": "https://wiki.erp-exemplo.com.br/artigos/redefinicao-de-senha-usuario"
+  },
+  {
+    "Categoria": "Fiscal e Tributário",
+    "Titulo": "Como configurar regras de tributação e CFOP no cadastro de produto?",
+    "Conteudo": "Para vincular regras fiscais de ICMS, PIS/COFINS e CFOP a um item:\n1. Acesse o módulo de Estoque/Cadastros > Produtos.\n2. Abra a aba 'Dados Fiscais'.\n3. Insira o NCM (Nomenclatura Comum do Mercosul) correto do produto.\n4. Defina a Natureza de Operação padrão e o CFOP (ex.: 5102 para venda dentro do estado).\n5. Salve as alterações para que as novas vendas herdem a tributação parametrizada.",
+    "Palavras Chave": "cfop, ncm, tributacao, fiscal, icms, cadastro produto, impostos",
+    "URL": "https://wiki.erp-exemplo.com.br/artigos/configuracao-regras-fiscais-cfop"
+  },
+  {
+    "Categoria": "Vendas e Pedidos",
+    "Titulo": "Como liberar pedido de venda travado por limite de crédito?",
+    "Conteudo": "Quando um cliente excede o limite concedido pelo setor financeiro, o pedido de venda entra automaticamente com status 'Bloqueado por Crédito'.\n\nProcedimento para liberação:\n1. O usuário supervisor deve acessar Financeiro > Gestão de Crédito > Pedidos Bloqueados.\n2. Analisar o histórico de inadimplência e títulos pendentes do parceiro.\n3. Clicar em 'Autorizar com Alçada' ou solicitar a prorrogação do limite ao setor de cobrança.",
+    "Palavras Chave": "pedido travado, bloqueio credito, liberar pedido, limite de credito, vendas",
+    "URL": "https://wiki.erp-exemplo.com.br/artigos/liberacao-pedido-limite-credito"
+  },
+  {
+    "Categoria": "Financeiro e Contas a Receber",
+    "Titulo": "Procedimento para baixa de títulos de clientes em lote",
+    "Conteudo": "Para realizar a baixa agrupada de títulos a receber:\n1. No menu Financeiro, acesse Contas a Receber > Baixas de Títulos.\n2. Filtre pelo período de vencimento ou pelo código da empresa cliente.\n3. Selecione os títulos pagos e informe a conta corrente de liquidação.\n4. Informe a data do crédito e confirme a operação para gerar a conciliação bancária.",
+    "Palavras Chave": "baixa de titulos, contas a receber, conciliacao bancaria, recebimento, financeiro",
+    "URL": "https://wiki.erp-exemplo.com.br/artigos/baixa-titulos-em-lote"
+  }
+]
