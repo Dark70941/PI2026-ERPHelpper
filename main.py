@@ -35,6 +35,9 @@ def chunk_text_with_overlap(text, max_tokens=2000, overlap=500, model="text-embe
     if not text:
         return []
 
+    if overlap >= max_tokens:
+        raise ValueError("overlap precisa ser menor que max_tokens.")
+
     encoding = tiktoken.encoding_for_model(model)
     tokens = encoding.encode(str(text))
 

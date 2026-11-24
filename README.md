@@ -362,9 +362,10 @@ chatBotAWS1/
 O repositório possui uma esteira automatizada no arquivo [`.github/workflows/ci.yml`](.github/workflows/ci.yml), executada a cada `push` e `pull_request` nas branches `main`, `master` e `develop`:
 1. **Compilação e Sintaxe:** Validação com `python -m py_compile` em `main.py`, `test_api.py`, `test_voice.py` e `scripts/load_test.py`.
 2. **Análise Estática de Código:** Verificação de padrões e prevenção de falhas de runtime com `flake8`.
-3. **Validação Estrutural da Base de Conhecimento:** Checagem sintática e estrutural do arquivo `knowledge_base.json` (530+ artigos).
-4. **Validação do Workflow do n8n:** Checagem de integridade do arquivo `n8n/workflow_uno_erp_helpper.json`.
-5. **Auditoria de Arquivos Essenciais:** Validação da presença de `.env.example`, `index.html`, `README.md`, `docs/`, scripts de backup e templates IaC.
+3. **Execução de Testes Unitários:** Execução automatizada da suíte de testes com `python -m unittest discover -s tests -p "test_*.py" -v`, cobrindo normalização, chunking, endpoints da API, diagnósticos do banco e integridade de arquivos.
+4. **Validação Estrutural da Base de Conhecimento:** Checagem sintática e estrutural do arquivo `knowledge_base.json`.
+5. **Validação do Workflow do n8n:** Checagem de integridade do arquivo `n8n/workflow_uno_erp_helpper.json`.
+6. **Auditoria de Arquivos Essenciais:** Validação da presença de `.env.example`, `index.html`, `README.md`, `docs/`, scripts de backup e templates IaC.
 
 ### 10.2. Continuous Deployment (CD)
 O fluxo de CD está definido em [`.github/workflows/cd.yml`](.github/workflows/cd.yml):
