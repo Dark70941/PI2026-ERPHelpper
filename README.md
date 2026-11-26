@@ -686,4 +686,4 @@ Este software é o produto tecnológico resultante do **Projeto Integrador (PI)*
 
 ## 13. Licença
 
-Este projeto é desenvolvido para fins acadêmicos e de homologação técnica junto à empresa parceira UNO ERP, sob os termos e diretrizes de propriedade intelectual do Projeto Integrador da FATEC.
+Este projeto é desenvolvido para fins acadêmicos e de homologação técnica junto à empresa parceira UNO Soluções, sob os termos e diretrizes de propriedade intelectual do Projeto Integrador da FATEC.
